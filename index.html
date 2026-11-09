@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Исполнитель госконтракта</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: рабочий кабинет — шапка с вкладками, сводка рисков сверху, детали ниже */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --ink:#17221f; --muted:#5b6964; --line:#d9e0dd;
+  --accent:#0f6b5c; --accent-soft:#e1f0ec;
+  --good:#2d7a3e; --warn:#a86a00; --crit:#b3261e;
+  --good-bg:#e5f3e7; --warn-bg:#fbf0dc; --crit-bg:#fbe5e3;
+  --f-body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111816; --surface:#18211e; --ink:#e4ece9; --muted:#97a8a2; --line:#2a3632;
+  --accent:#4fbfa8; --accent-soft:#1c3530;
+  --good:#7fcf8e; --warn:#e8b45a; --crit:#f08a82;
+  --good-bg:#1d3324; --warn-bg:#3a2e17; --crit-bg:#3d1f1d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111816; --surface:#18211e; --ink:#e4ece9; --muted:#97a8a2; --line:#2a3632;
+  --accent:#4fbfa8; --accent-soft:#1c3530;
+  --good:#7fcf8e; --warn:#e8b45a; --crit:#f08a82;
+  --good-bg:#1d3324; --warn-bg:#3a2e17; --crit-bg:#3d1f1d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:16px}
+.brand h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.demo{font-size:12px;color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:999px;font-weight:500}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+nav button{font:inherit;font-weight:500;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:10px 14px;cursor:pointer;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
+nav button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-family:var(--f-mono);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px}
+.stat .s{font-size:12.5px;color:var(--muted)}
+.list{display:grid;gap:10px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:6px 16px;border-left:4px solid var(--line)}
+.row.crit{border-left-color:var(--crit)} .row.warn{border-left-color:var(--warn)} .row.good{border-left-color:var(--good)}
+.row h3{margin:0;font-size:15.5px;font-weight:600;min-width:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);grid-column:1/-1}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.chip.crit{background:var(--crit-bg);color:var(--crit)} .chip.warn{background:var(--warn-bg);color:var(--warn)} .chip.good{background:var(--good-bg);color:var(--good)} .chip.reg{background:var(--accent-soft);color:var(--accent)}
+.note{grid-column:1/-1;font-size:13.5px;background:var(--bg);border-radius:8px;padding:8px 12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+input,select,textarea{font:inherit;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+textarea{min-height:340px;font-size:13.5px;line-height:1.55;resize:vertical}
+.inline{display:flex;gap:10px;align-items:center;margin-top:12px;font-size:14px}
+.inline input{width:auto}
+.res{display:grid;gap:10px}
+.res .line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed var(--line);padding-bottom:8px}
+.res .line b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.res .total{font-size:18px;border-bottom:0}
+.formula{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:8px;overflow-x:auto}
+.small{font-size:12.5px;color:var(--muted)}
+.btn{font:inherit;font-weight:600;background:var(--accent);color:var(--surface);border:0;border-radius:8px;padding:9px 16px;cursor:pointer}
+.tl{display:grid;gap:0}
+.tl .item{display:grid;grid-template-columns:96px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.tl .date{font-family:var(--f-mono);font-size:13px}
+@media (max-width:520px){.tl .item{grid-template-columns:1fr auto}.tl .date{grid-column:1/-1}}
+h2{font-size:17px;margin:0 0 4px}
+.atom-head{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:end}
+@media (max-width:760px){.atom-head{grid-template-columns:1fr}}
+.card-item{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.card-item b{font-size:16px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0 12px}
+.progress{height:8px;background:var(--bg);border-radius:999px;overflow:hidden;margin-top:12px}
+.progress span{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .2s}
+.checks{list-style:none;padding:0;margin:8px 0 14px;display:grid;gap:2px}
+.checks label{display:flex;gap:10px;align-items:flex-start;margin:0;padding:8px 4px;color:var(--ink);font-size:14px;cursor:pointer;border-bottom:1px solid var(--line)}
+.checks input{width:auto;margin-top:3px;accent-color:var(--accent)}
+.checks .done span{color:var(--muted);text-decoration:line-through}
+.road-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}
+.road-sum .stat{padding:12px 14px}
+.road-sum .stat .v{font-size:19px}
+details.params{margin:14px 0;border:1px solid var(--line);border-radius:8px;padding:2px 14px 14px}
+details.params summary{cursor:pointer;font-weight:600;padding:8px 0}
+.toggles{display:grid;gap:4px;margin-top:12px}
+label.tog{display:flex;gap:10px;align-items:flex-start;color:var(--ink);font-size:14px;margin:0;padding:4px 0}
+label.tog input{width:auto;margin-top:3px;accent-color:var(--accent)}
+.flags{margin:10px 0 0;padding-left:18px;display:grid;gap:6px;font-size:14px;color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12.5px;color:var(--muted);margin:14px 0 6px}
+.legend i{display:inline-block;width:18px;height:8px;border-radius:4px;margin-right:6px;vertical-align:middle}
+.legend i.lg-line{width:0;height:14px;border-radius:0;border-left:2px solid var(--crit)}
+.legend i.lg-line.td{border-left:2px dashed var(--ink);opacity:.5}
+.gantt{display:grid;border-top:1px solid var(--line);overflow:hidden}
+.g-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,2fr) 84px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.g-name{font-size:14px;font-weight:500}
+.g-row.par .g-name{font-weight:400}
+.g-track{position:relative;height:18px;background:var(--bg);border-radius:4px}
+.g-bar{position:absolute;top:3px;height:12px;border-radius:6px}
+.g-bar.norm{background:var(--accent)} .g-bar.est{background:var(--muted);opacity:.55} .g-bar.open{background:var(--warn);opacity:.75}
+.g-bar.par{top:5px;height:8px}
+.g-line{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px solid var(--crit)}
+.g-line.td{border-left:2px dashed var(--ink);opacity:.5}
+.g-ms{position:absolute;top:3px;width:11px;height:11px;background:var(--ink);transform:translateX(-6px) rotate(45deg)}
+.g-dates{font-size:11.5px;color:var(--muted);text-align:right;line-height:1.35}
+.g-axis{padding:6px 0}
+.g-axis .g-track{background:none;height:16px}
+.g-tick{position:absolute;top:0;font-size:11px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}
+.tchip{font-size:11px;font-weight:600;padding:1px 6px;border-radius:999px;white-space:nowrap}
+.tchip.norm{background:var(--accent-soft);color:var(--accent)} .tchip.est{color:var(--muted);border:1px solid var(--line)} .tchip.open{background:var(--warn-bg);color:var(--warn)}
+@media (max-width:640px){.g-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px}.g-track{grid-column:1/-1;grid-row:2}.g-axis .g-label,.g-axis .g-dates{display:none}}
+.verdict{border-radius:8px;padding:10px 12px;font-size:14px}
+.verdict.crit{background:var(--crit-bg);color:var(--crit)} .verdict.warn{background:var(--warn-bg);color:var(--warn)} .verdict.good{background:var(--good-bg);color:var(--good)}
+footer{margin-top:28px;font-size:12px;color:var(--muted);max-width:75ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Исполнитель госконтракта</h1>
+      <p>ИИ-агент поставщика: от подписания контракта до закрытия</p>
+    </div>
+    <span class="demo">Прототип · примеры данных</span>
+  </header>
+
+  <nav role="tablist">
+    <button role="tab" data-tab="contracts" aria-selected="true">Контракты</button>
+    <button role="tab" data-tab="atom" aria-selected="false">Атомный контур</button>
+    <button role="tab" data-tab="calendar" aria-selected="false">Сроки</button>
+    <button role="tab" data-tab="penalty" aria-selected="false">Риск неустойки</button>
+    <button role="tab" data-tab="claim" aria-selected="false">Ответ на претензию</button>
+    <button role="tab" data-tab="review" aria-selected="false">Согласования</button>
+  </nav>
+
+  <section id="tab-contracts">
+    <div class="summary" id="summary"></div>
+    <div class="list" id="contracts"></div>
+  </section>
+
+  <section id="tab-atom" hidden>
+    <div class="panel atom-head">
+      <div><label for="a-contract" style="margin-top:0">Договор</label><select id="a-contract"></select></div>
+      <div id="a-card"></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>Дорожная карта договора</h2>
+      <p class="small">Путь изделия от ИТТ до площадки АЭС с нормативными сроками согласований и приёмки. Отсчёт от даты договора в рабочих днях; агент сравнивает итог со сроком поставки.</p>
+      <div id="r-summary"></div>
+      <details class="params" open>
+        <summary>Параметры договора и оценки поставщика</summary>
+        <div class="fields">
+          <div><label for="r-sign">Дата договора</label><input type="date" id="r-sign"></div>
+          <div><label for="r-ship">Срок поставки по договору</label><input type="date" id="r-ship"></div>
+          <div><label for="r-tzdev">Разработка ТЗ, раб. дн.</label><input type="number" id="r-tzdev" min="0"></div>
+          <div><label for="r-rkd">РКД и подготовка, раб. дн.</label><input type="number" id="r-rkd" min="0"></div>
+          <div><label for="r-make">Изготовление, раб. дн.</label><input type="number" id="r-make" min="0"></div>
+          <div><label for="r-transit">Доставка, раб. дн.</label><input type="number" id="r-transit" min="0"></div>
+          <div><label for="r-pok">Согласование ПОК(И), раб. дн.</label><input type="number" id="r-pok" min="0"></div>
+          <div><label for="r-imp">Решение по импорту, раб. дн.</label><input type="number" id="r-imp" min="0"></div>
+        </div>
+        <div class="toggles">
+          <label class="tog" for="r-import"><input type="checkbox" id="r-import"> Есть импортные комплектующие или материалы</label>
+          <label class="tog" for="r-repeat"><input type="checkbox" id="r-repeat"> Изделие уже поставлялось — план качества согласуют за 5 дней</label>
+          <label class="tog" for="r-long"><input type="checkbox" id="r-long"> Длительный цикл изготовления — инспекция до 5 дней</label>
+        </div>
+      </details>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>Нормативный срок</span>
+        <span><i style="background:var(--muted);opacity:.55"></i>Оценка поставщика</span>
+        <span><i style="background:var(--warn);opacity:.75"></i>Срок не нормирован — уточнить</span>
+        <span><i class="lg-line"></i>Срок поставки</span>
+        <span><i class="lg-line td"></i>Сегодня</span>
+      </div>
+      <div class="gantt" id="r-gantt"></div>
+      <p class="small" style="margin-top:10px">Нормативные сроки — предельные, согласование может пройти быстрее. Рабочие дни считаются без выходных и нерабочих праздников; переносы выходных не учтены. Источники: приказ Росатома № 1/1134-П, РД ЭО 1.1.2.01.0713-2019, указания № 1/411-П, НП-071-18, НП-090-11.</p>
+    </div>
+    <div class="grid2" style="margin-top:16px">
+      <div class="panel">
+        <h2>График приёмки</h2>
+        <p class="small">Сроки из договора и плана качества. Агент проверяет, успевает ли приёмка с участием уполномоченной организации до отгрузки.</p>
+        <div class="fields">
+          <div><label for="a-accept">Начало приёмки</label><input type="date" id="a-accept"></div>
+          <div><label for="a-ship">Отгрузка по договору</label><input type="date" id="a-ship"></div>
+          <div><label for="a-notify">Уведомить УО за, дн.</label><input type="number" id="a-notify" min="0"></div>
+          <div><label for="a-test">Испытания, раб. дн.</label><input type="number" id="a-test" min="0"></div>
+          <div><label for="a-docs">Оформление, раб. дн.</label><input type="number" id="a-docs" min="0"></div>
+          <div><label for="a-inctl">Входной контроль док., раб. дн.</label><input type="number" id="a-inctl" min="0"></div>
+        </div>
+        <div class="tl" id="a-plan" style="margin-top:12px"></div>
+        <div id="a-verdict" style="margin-top:12px"></div>
+      </div>
+      <div class="panel">
+        <h2>Комплект документов</h2>
+        <p class="small">Перечень из плана качества по договору (пример). Агент собирает его из ТЗ, конструкторской документации и плана качества.</p>
+        <div class="progress" aria-hidden="true"><span id="a-bar"></span></div>
+        <p class="small" id="a-progress" role="status"></p>
+        <ul class="checks" id="a-checks"></ul>
+        <div class="note" id="a-edition"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-calendar" hidden>
+    <div class="panel"><h2>Ближайшие обязательства</h2><p class="small">Сроки поставщика и встречные сроки заказчика по всем контрактам.</p><div class="tl" id="timeline"></div></div>
+  </section>
+
+  <section id="tab-penalty" hidden>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Расчёт по 44-ФЗ</h2>
+        <label for="p-contract">Контракт</label><select id="p-contract"></select>
+        <label for="p-price">Цена контракта (этапа), ₽</label><input id="p-price" type="number" min="0" step="1000">
+        <label for="p-done">Принято и оплачено, ₽</label><input id="p-done" type="number" min="0" step="1000">
+        <label for="p-days">Дней просрочки</label><input id="p-days" type="number" min="0" value="10">
+        <label for="p-rate">Ключевая ставка ЦБ, %</label><input id="p-rate" type="number" min="0" step="0.25" value="14">
+        <div class="inline"><input type="checkbox" id="p-smp"><label for="p-smp" style="margin:0;color:var(--ink)">Закупка среди СМП и СОНО</label></div>
+      </div>
+      <div class="panel">
+        <h2>Сумма риска</h2>
+        <div class="res" id="p-result"></div>
+        <p class="formula">Пеня = (Цена − Исполнено) × 1/300 × Ставка × Дни<br>ч. 7 ст. 34 44-ФЗ; штраф — Правила № 1042</p>
+        <p class="small">Ставка 14% действует с 27.07.2026, сохранена 23.10.2026; следующее решение ЦБ — 18.12.2026. Пеня считается по ставке на дату уплаты. Размер штрафа сверяйте с пунктом контракта.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-claim" hidden>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Претензия заказчика</h2>
+        <label for="c-contract">Контракт</label><select id="c-contract"></select>
+        <label for="c-type">Суть претензии</label>
+        <select id="c-type">
+          <option value="delay">Просрочка поставки и начисленная пеня</option>
+          <option value="quality">Несоответствие качества или спецификации</option>
+          <option value="docs">Неполный комплект документов о приёмке</option>
+        </select>
+        <label for="c-pos">Позиция поставщика</label>
+        <select id="c-pos">
+          <option value="dispute">Оспорить: вина заказчика или ошибка в расчёте</option>
+          <option value="partial">Признать частично</option>
+          <option value="accept">Признать и устранить</option>
+        </select>
+        <label for="c-num">Номер и дата претензии</label><input id="c-num" value="№ 214 от 28.10.2026">
+        <label for="c-fact">Факты в пользу поставщика</label>
+        <input id="c-fact" value="заказчик согласовал макет маркировки только 22.10.2026 при сроке 10.10.2026">
+        <p class="small">В продукте агент сам подтягивает факты из переписки и истории контракта и проверяет арифметику неустойки.</p>
+      </div>
+      <div class="panel">
+        <h2>Проект ответа</h2>
+        <textarea id="c-out" aria-label="Проект ответа на претензию"></textarea>
+        <div class="inline"><button class="btn" id="c-copy">Скопировать текст</button><span class="small" id="c-status" role="status"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-review" hidden>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Замечания согласующих</h2>
+        <p class="small">Агент читает протокол замечаний, находит нормы в подключённой базе нормативных документов и готовит проект письма. Каждая ссылка проверяется по тексту документа — несуществующие пункты агент не приводит.</p>
+        <label for="v-remark">Замечание:</label>
+        <textarea id="v-remark" style="min-height:90px">График изготовления не содержит контрольных точек оценок соответствия по классу безопасности и не согласован со специализированной организацией.</textarea>
+        <label for="v-norms">Найдено в нормативной базе:</label>
+        <div id="v-norms" class="list" style="gap:8px"></div>
+        <p class="small" style="margin-top:10px">В рабочей версии агент ищет по 16 документам: НП-001-15, НП-071-18/26, НП-090-11, РД ЭО 0713-2019, 0931-2021, РГ 1562-2019, приказам Росатома № 1/411-П, 1/433-П, 1/1134-П, ГОСТам и СМК Концерна.</p>
+      </div>
+      <div class="panel">
+        <h2>Проект письма в согласующие</h2>
+        <textarea id="v-out" aria-label="Проект письма"></textarea>
+        <div class="inline"><button class="btn" id="v-copy">Скопировать текст</button><span class="small" id="v-status" role="status"></span></div>
+        <p class="small" style="margin-top:8px">Письмо отправляет человек. Агент готовит текст, обоснование и цитаты; итоговый документ проверяет и подписывает ответственный.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>Прототип интерфейса для демонстрации. Данные контрактов — вымышленные примеры. В рабочей версии точка входа — почтовый ящик: договор или протокол приходит письмом, агент разбирает и отвечает карточкой. Расчёты и тексты не являются юридическим заключением: перед отправкой заказчику документ проверяет и подписывает пользователь.</footer>
+</div>
+
+<script>
+(function(){
+const DAY=864e5, today=new Date(); today.setHours(0,0,0,0);
+const d=o=>new Date(today.getTime()+o*DAY);
+const fmt=x=>x.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
+const rub=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
+
+const contracts=[
+ {id:1,title:'Поставка расходных медицинских изделий',customer:'ГБУЗ «Областная клиническая больница»',reg:'44-ФЗ',num:'0348200012326000418',price:2400000,done:960000,smp:true,
+  stages:[{name:'Этап 2: поставка партии 2',due:d(3),price:1440000,who:'Поставщик'},{name:'Приёмка этапа 1 в ЕИС заказчиком',due:d(-2),who:'Заказчик',doneFlag:true}],
+  note:'Отгрузка партии 2 не подтверждена. При просрочке пеня ≈ 672 ₽ в день.'},
+ {id:2,title:'Капитальный ремонт кровли школы № 17',customer:'Управление образования',reg:'44-ФЗ',num:'0151300004826000093',price:18500000,done:6200000,smp:false,
+  stages:[{name:'Этап 2: устройство покрытия',due:d(12),price:9100000,who:'Поставщик'},{name:'Оплата этапа 1 (7 раб. дней после приёмки)',due:d(5),who:'Заказчик'}],
+  note:'Заказчик должен оплатить этап 1 через 5 дней. Агент напомнит и подготовит требование о пене к заказчику при задержке.'},
+ {id:3,title:'Поставка запорной арматуры для энергоблока',customer:'АО концерна отрасли (по ЕОСЗ)',reg:'223-ФЗ · ЕОСЗ',num:'Договор № 2026/АР-117',price:7800000,done:0,smp:false,atom:'Класс безопасности 3 (НП-001-15)',
+  stages:[{name:'Приёмка с участием уполномоченной организации',due:d(30),who:'Поставщик'},{name:'Отгрузка на площадку',due:d(90),price:7800000,who:'Поставщик'}],
+  note:'С 18.12.2026 вводятся НП-071-26. Если приёмка сдвинется на эту дату или позже, агент переключит чек-лист на новую редакцию.'},
+ {id:4,title:'Изготовление и поставка обратных клапанов',customer:'АО машиностроительного дивизиона (по ЕОСЗ)',reg:'223-ФЗ · ЕОСЗ',num:'Договор № 2026/КО-042',price:23400000,done:0,smp:false,atom:'Класс безопасности 2 (НП-001-15)',
+  stages:[{name:'Приёмка с участием уполномоченной организации',due:d(52),who:'Поставщик'},{name:'Отгрузка заказчику',due:d(55),price:23400000,who:'Поставщик'}],
+  note:'Приёмка попадает на период после 18.12.2026, документы оформляются по НП-071-26. После испытаний до отгрузки не остаётся времени — см. «Атомный контур».'},
+ {id:5,title:'Изготовление и поставка центробежных насосов',customer:'АО концерна отрасли (по ЕОСЗ)',reg:'223-ФЗ · ЕОСЗ',num:'Проект договора № 2026/НС-208',price:41500000,done:0,smp:false,atom:'Класс безопасности 2 (НП-001-15)',
+  stages:[{name:'Подписание договора',due:d(14),who:'Поставщик'},{name:'Поставка по проекту договора',due:d(284),price:41500000,who:'Поставщик'}],
+  note:'Проект договора. Агент проверил график по нормативам: срок поставки 9 месяцев не вмещает согласование ТЗ, ТУ и приёмку. Нужен протокол разногласий — см. дорожную карту в «Атомном контуре».'}
+];
+
+const CHK_BASE=[['Класс безопасности указан в КД и договоре'],['План качества согласован с заказчиком'],['Сертификаты и протоколы на материалы'],
+  ['Уведомление уполномоченной организации о готовности к приёмке'],['Приёмо-сдаточные испытания'],['Паспорта изделий и эксплуатационная документация'],
+  ['Документ о приёмке с участием уполномоченной организации']];
+const mkChecks=flags=>CHK_BASE.map((x,i)=>[x[0],!!flags[i]]);
+const atomData={
+ 3:{item:'Задвижка клиновая DN 150, PN 16, 12 шт.',cls:3,accept:d(30),ship:d(90),notify:10,test:5,docs:3,inctl:15,
+  road:{tzdev:15,rkd:30,make:55,transit:7,imp:60,pok:20,import:false,repeat:true,long:false},checks:mkChecks([1,1,1])},
+ 4:{item:'Клапан обратный DN 300, PN 25, 4 шт.',cls:2,accept:d(52),ship:d(55),notify:10,test:5,docs:3,inctl:15,
+  road:{tzdev:20,rkd:40,make:70,transit:10,imp:60,pok:20,import:true,repeat:false,long:true},checks:mkChecks([1])},
+ 5:{item:'Насос центробежный ЦН 400-210, 2 шт.',cls:2,accept:null,ship:d(284),notify:10,test:5,docs:3,inctl:15,
+  road:{sign:d(14),tzdev:20,rkd:45,make:90,transit:10,imp:60,pok:20,import:true,repeat:false,long:true},checks:mkChecks([1])}
+};
+const NP_SWITCH=new Date(2026,11,18);
+
+function riskOf(c){const s=c.stages.filter(x=>x.who==='Поставщик'&&!x.doneFlag).sort((a,b)=>a.due-b.due)[0];if(!s)return{level:'good',days:null};const days=Math.round((s.due-today)/DAY);return{level:days<=5?'crit':days<=14?'warn':'good',days,stage:s};}
+function penaltyDay(c){return (c.price-c.done)*0.14/300;}
+function fine(price,smp){
+ if(smp){if(price<=3e6)return .03*price;if(price<=1e7)return .02*price;if(price<=2e7)return .01*price;}
+ const t=[[3e6,.10],[5e7,.05],[1e8,.01],[5e8,.005],[1e9,.004],[2e9,.003],[5e9,.0025],[1e10,.002],[Infinity,.001]];
+ for(const [lim,p] of t) if(price<=lim) return p*price;}
+function fineNonMoney(price){return price<=3e6?1000:price<=5e7?5000:price<=1e8?10000:100000;}
+const daysWord=n=>{const a=Math.abs(n)%100,b=a%10;return (a>10&&a<20)?'дней':b===1?'день':(b>=2&&b<=4)?'дня':'дней'};
+const label={crit:'Срочно',warn:'Внимание',good:'В графике'};
+
+function renderSummary(){
+ const active=contracts.length, crit=contracts.filter(c=>riskOf(c).level==='crit').length;
+ const exposure=contracts.filter(c=>c.reg==='44-ФЗ').reduce((s,c)=>s+penaltyDay(c)*10+fine(c.price,c.smp),0);
+ const sum=contracts.reduce((s,c)=>s+c.price,0);
+ document.getElementById('summary').innerHTML=
+ `<div class="stat"><div class="k">Активные контракты</div><div class="v">${active}</div><div class="s">на ${rub(sum)}</div></div>
+  <div class="stat"><div class="k">Срочные этапы</div><div class="v" style="color:var(--crit)">${crit}</div><div class="s">срок ≤ 5 дней</div></div>
+  <div class="stat"><div class="k">Риск при 10 днях просрочки</div><div class="v">${rub(exposure)}</div><div class="s">пени + штрафы по 44-ФЗ</div></div>`;}
+
+function renderContracts(){
+ document.getElementById('contracts').innerHTML=contracts.map(c=>{const r=riskOf(c);
+  const when=r.days===null?'':`${r.stage.name} — через <span class="mono">${r.days}</span> ${daysWord(r.days)}`;
+  return `<article class="row ${r.level}">
+   <h3>${c.title}</h3><span class="chip ${r.level}">${label[r.level]}</span>
+   <div class="meta"><span class="chip reg">${c.reg}</span><span>${c.customer}</span><span class="mono">${c.num}</span><span class="mono">${rub(c.price)}</span>${c.atom?`<span class="chip warn">${c.atom}</span>`:''}${c.smp?'<span>СМП</span>':''}</div>
+   <div class="meta">${when}</div>
+   <div class="note">${c.note}</div></article>`}).join('');}
+
+function renderTimeline(){
+ const items=contracts.flatMap(c=>c.stages.map(s=>({...s,c}))).sort((a,b)=>a.due-b.due);
+ document.getElementById('timeline').innerHTML=items.map(i=>{const days=Math.round((i.due-today)/DAY);
+  const lvl=i.doneFlag?'good':days<0?'crit':days<=5?'crit':days<=14?'warn':'good';
+  const txt=i.doneFlag?'Выполнено':days<0?`Просрочено ${-days} ${daysWord(days)}`:`Через ${days} ${daysWord(days)}`;
+  return `<div class="item"><span class="date">${fmt(i.due)}</span><div style="min-width:0"><div>${i.name}</div><div class="small">${i.c.title} · ${i.who}</div></div><span class="chip ${lvl}">${txt}</span></div>`}).join('');}
+
+const $=id=>document.getElementById(id);
+function fillSelect(el){el.innerHTML=contracts.map(c=>`<option value="${c.id}">${c.title}</option>`).join('');}
+fillSelect($('p-contract'));fillSelect($('c-contract'));
+function loadPenalty(){const c=contracts.find(x=>x.id==$('p-contract').value);$('p-price').value=c.price;$('p-done').value=c.done;$('p-smp').checked=c.smp;calc();}
+function calc(){
+ const price=+$('p-price').value||0, done=+$('p-done').value||0, days=+$('p-days').value||0, rate=(+$('p-rate').value||0)/100, smp=$('p-smp').checked;
+ const c=contracts.find(x=>x.id==$('p-contract').value);
+ const base=Math.max(price-done,0), peniDay=base*rate/300, peni=peniDay*days, f=fine(price,smp), fn=fineNonMoney(price);
+ const warn223=c.reg!=='44-ФЗ'?'<p class="small" style="color:var(--warn)">Это договор по 223-ФЗ: формулы 44-ФЗ к нему не применяются, неустойку агент берёт из текста договора. Расчёт показан для примера.</p>':'';
+ $('p-result').innerHTML=`${warn223}
+  <div class="line"><span>База для пени</span><b>${rub(base)}</b></div>
+  <div class="line"><span>Пеня за 1 день</span><b>${rub(peniDay)}</b></div>
+  <div class="line"><span>Пеня за ${days} ${daysWord(days)}</span><b>${rub(peni)}</b></div>
+  <div class="line"><span>Штраф за ненадлежащее исполнение${smp?' (СМП/СОНО)':''}</span><b>${rub(f)}</b></div>
+  <div class="line"><span>Штраф за нестоимостное нарушение</span><b>${rub(fn)}</b></div>
+  <div class="line total"><span>Пеня + штраф</span><b style="color:var(--crit)">${rub(peni+f)}</b></div>`;}
+['p-price','p-done','p-days','p-rate','p-smp'].forEach(id=>$(id).addEventListener('input',calc));
+$('p-contract').addEventListener('change',loadPenalty);
+
+function claim(){
+ const c=contracts.find(x=>x.id==$('c-contract').value), t=$('c-type').value, p=$('c-pos').value, num=$('c-num').value, fact=$('c-fact').value.trim();
+ const law=c.reg==='44-ФЗ'?'ст. 34 и ст. 94 Федерального закона № 44-ФЗ, Правил, утверждённых Постановлением Правительства РФ от 30.08.2017 № 1042':'условий договора и Положения о закупке заказчика (ЕОСЗ), ст. 330, 333, 406 ГК РФ';
+ const subj={delay:'о взыскании неустойки за просрочку исполнения обязательств',quality:'о несоответствии поставленного товара условиям контракта',docs:'о неполноте комплекта документов о приёмке'}[t];
+ let body='';
+ if(p==='dispute'){
+  body=`Поставщик не согласен с претензией по следующим основаниям.\n\n1. ${fact?fact[0].toUpperCase()+fact.slice(1)+'.':'[Факт неисполнения встречной обязанности заказчиком.]'} В соответствии с п. 1 ст. 406 ГК РФ кредитор считается просрочившим, если не совершил действий, без которых должник не мог исполнить обязательство.\n\n2. ${t==='delay'?'Срок исполнения подлежит продлению на период просрочки заказчика. С учётом этого просрочка поставщика отсутствует, а начисление пени не основано на условиях контракта.':t==='quality'?'Претензия не содержит ссылок на конкретные пункты спецификации и результаты экспертизы. Просим представить акт с указанием выявленных несоответствий.':'Документы, перечисленные в контракте, приложены к документу о приёмке. Требование о представлении дополнительных документов выходит за рамки условий контракта.'}\n\n3. Дополнительно сообщаем, что расчёт неустойки, приложенный к претензии, произведён без учёта ${c.reg==='44-ФЗ'?'стоимости фактически исполненных обязательств (ч. 7 ст. 34 44-ФЗ)':'условий договора о порядке её начисления'}.\n\nНа основании изложенного просим отозвать претензию.`;
+ } else if(p==='partial'){
+  body=`Поставщик признаёт претензию частично.\n\n1. Поставщик подтверждает факт ${t==='delay'?'просрочки':t==='quality'?'несоответствия в части':'неполноты комплекта'}, однако ${fact?fact+',':'часть периода приходится на просрочку заказчика,'} что исключает ответственность поставщика за соответствующий период (п. 1 ст. 406 ГК РФ).\n\n2. Поставщик готов уплатить неустойку в размере, рассчитанном за период, в котором отсутствует вина заказчика. Расчёт прилагается.\n\nПросим скорректировать требование.`;
+ } else {
+  body=`Поставщик признаёт обстоятельства, изложенные в претензии.\n\n${t==='quality'?'Поставщик обязуется заменить товар, не соответствующий спецификации, в течение [N] рабочих дней с даты получения настоящего письма.':t==='docs'?'Недостающие документы будут размещены в ЕИС в составе исправленного документа о приёмке в течение [N] рабочих дней.':'Поставщик готов уплатить неустойку.'}\n\n${c.reg==='44-ФЗ'&&t==='delay'?'Одновременно просим рассмотреть возможность списания начисленной неустойки в соответствии с Постановлением Правительства РФ от 04.07.2018 № 783, если условия списания будут выполнены по итогам исполнения контракта.':''}`;
+ }
+ $('c-out').value=`Заказчику: ${c.customer}\n\nОтвет на претензию ${num}\n${subj}\nпо ${c.reg==='44-ФЗ'?'контракту':'договору'} ${c.num}\n\nПоставщик рассмотрел претензию и, руководствуясь ${law}, сообщает следующее.\n\n${body.trim()}\n\nПриложения: [перечень документов]\n\nГенеральный директор ____________ / ____________ /`;
+ $('c-status').textContent='';}
+['c-contract','c-type','c-pos','c-num','c-fact'].forEach(id=>$(id).addEventListener('input',claim));
+$('c-copy').addEventListener('click',()=>{const t=$('c-out');
+ const ok=()=>{$('c-status').textContent='Скопировано'};
+ const fall=()=>{t.focus();t.select();$('c-status').textContent='Текст выделен — нажмите Ctrl+C'};
+ try{navigator.clipboard.writeText(t.value).then(ok,fall)}catch(e){fall()}});
+
+const pad=n=>String(n).padStart(2,'0');
+const toIso=x=>`${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+const fromIso=s=>{const [y,m,dd]=s.split('-').map(Number);return new Date(y,m-1,dd);};
+const addDays=(x,n)=>new Date(x.getFullYear(),x.getMonth(),x.getDate()+n);
+const calDays=(a,b)=>Math.round((b-a)/DAY);
+const HOL=new Set(['01-01','01-02','01-03','01-04','01-05','01-06','01-07','01-08','02-23','03-08','05-01','05-09','06-12','11-04']);
+const isWork=x=>{const w=x.getDay();return w!==0&&w!==6&&!HOL.has(pad(x.getMonth()+1)+'-'+pad(x.getDate()));};
+function addWD(x,n){let r=new Date(x),c=0;while(c<n){r=addDays(r,1);if(isWork(r))c++;}return r;}
+function subWD(x,n){let r=new Date(x),c=0;while(c<n){r=addDays(r,-1);if(isWork(r))c++;}return r;}
+function wdBetween(a,b){if(b<a)return -wdBetween(b,a);let c=0,r=new Date(a);while(r<b){r=addDays(r,1);if(isWork(r))c++;}return c;}
+const preMake=r=>r.tzdev+76+r.rkd+(r.repeat?5:10);
+
+// Демо-договоры: дата договора выводится из фактической даты приёмки, у проекта — наоборот
+[3,4].forEach(k=>{const a=atomData[k];a.road.sign=subWD(a.accept,preMake(a.road)+a.road.make);});
+{const a=atomData[5];a.accept=addWD(a.road.sign,preMake(a.road)+a.road.make);}
+
+$('a-contract').innerHTML=contracts.filter(c=>atomData[c.id]).map(c=>`<option value="${c.id}">${c.title}</option>`).join('');
+const curAtom=()=>atomData[$('a-contract').value];
+
+function buildRoad(a){
+ const r=a.road,S=[];let t=r.sign;
+ const push=(key,name,who,days,type,src)=>{const s={key,name,who,days,type,src,start:t,end:addWD(t,days)};S.push(s);t=s.end;return s;};
+ const tzdev=push('tzdev','Разработка ТЗ по ИТТ','Поставщик',r.tzdev,'est','ИТТ генпроектировщика');
+ const tz=push('tz','Согласование и утверждение ТЗ','Заказчик, генпроектировщик, Концерн',76,'norm','Приказ № 1/1134-П');
+ const rkd=push('rkd','РКД и подготовка производства','Изготовитель',r.rkd,'est','НП-089-15, НП-090-11');
+ const plan=push('plan','Согласование плана качества','Концерн или СО',r.repeat?5:10,'norm','РД ЭО 1.1.2.01.0713-2019');
+ const make=push('make','Изготовление и испытания','Изготовитель',r.make,'est','Контрольные точки плана качества');
+ const insp=push('insp','Приёмочная инспекция','Изготовитель, Концерн или СО',r.long?5:3,'norm','Указания № 1/411-П');
+ const inctl=push('inctl','Входной контроль документации','Заказчик',15,'norm','Указания № 1/411-П');
+ const transit=push('transit','Отгрузка и доставка на АЭС','Поставщик',r.transit,'est','Договор');
+ const pok={key:'pok',name:'Согласование ПОК(И)',who:'Концерн',days:r.pok,type:'open',src:'НП-090-11, РД ЭО 1.1.2.29.0955-2014',start:r.sign,end:addWD(r.sign,r.pok),par:true};
+ const tu={key:'tu',name:'Согласование ТУ',who:'Те же участники, что по ТЗ',days:73,type:'norm',src:'Приказ № 1/1134-П',start:make.start,end:addWD(make.start,73),par:true};
+ const imp=r.import?{key:'imp',name:'Решение о применении импортной продукции',who:'Концерн, Ростехнадзор',days:r.imp,type:'open',src:'НП-071-18 п. 45–54, ГОСТ Р 50.07.01',start:tz.end,end:addWD(tz.end,r.imp),par:true}:null;
+ const rows=[tzdev,pok,tz,rkd,imp,plan,make,tu,insp,inctl,transit].filter(Boolean);
+ return {rows,finish:t,make,insp,pok,tu,imp};
+}
+
+const TL={norm:'норматив',est:'оценка',open:'не нормирован'};
+const MON=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+function renderRoad(a){
+ const r=a.road,R=buildRoad(a),deadline=a.ship,diff=calDays(R.finish,deadline);
+ const makeStart=addWD(r.sign,preMake(r)),latestInsp=subWD(deadline,(r.long?5:3)+15+r.transit),avail=wdBetween(makeStart,latestInsp);
+ const signed=r.sign<=today;
+ let v;
+ if(diff<0)v=['crit',signed
+  ?`Договор подписан, а нормативный график выходит за срок поставки на ${-diff} ${daysWord(diff)}. Агент подготовит письмо заказчику: зафиксировать сроки согласования ТЗ, ТУ и плана качества как встречные обязательства и согласовать перенос поставки на ${fmt(R.finish)}.`
+  :`Срок поставки не вмещает нормативные этапы: не хватает ${-diff} ${daysWord(diff)}. До подписания агент подготовит протокол разногласий: перенести срок поставки на ${fmt(R.finish)} или отсчитывать его от даты утверждения ТЗ.`];
+ else if(diff<=10)v=['warn',`Запас ${diff} ${daysWord(diff)}: если любое согласование займёт предельный срок или уйдёт на второй круг, поставка сорвётся.`];
+ else v=['good',`График вмещает нормативные сроки с запасом ${diff} ${daysWord(diff)}.`];
+ const flags=[];
+ if(R.pok.end>R.make.start)flags.push(`ПОК(И) по оценке согласуют ${fmt(R.pok.end)} — позже начала изготовления (${fmt(R.make.start)}). Подайте её раньше.`);
+ if(R.tu.end>R.insp.end)flags.push(`Согласование ТУ по предельному сроку закончится ${fmt(R.tu.end)}, после приёмочных испытаний. Передайте ТУ на согласование до начала изготовления.`);
+ if(R.imp&&R.imp.end>R.insp.start)flags.push(`Решение о применении импортной продукции может не успеть к приёмке (${fmt(R.insp.start)}). Без него на входном контроле фиксируется несоответствие, на устранение — до 90 дней.`);
+ if(r.sign<NP_SWITCH&&R.insp.start>=NP_SWITCH)flags.push(`Договор ${signed?'заключён':'будет заключён'} до 18.12.2026, а приёмка пройдёт после: документы об оценке соответствия оформляются по НП-071-26.`);
+ $('r-summary').innerHTML=`<div class="road-sum">
+  <div class="stat"><div class="k">Готовность по нормативам</div><div class="v">${fmt(R.finish)}</div><div class="s">доставка на АЭС</div></div>
+  <div class="stat"><div class="k">Срок по договору</div><div class="v">${fmt(deadline)}</div><div class="s">${signed?'договор подписан':'проект договора'}</div></div>
+  <div class="stat"><div class="k">${diff<0?'Дефицит':'Запас'}</div><div class="v" style="color:var(--${v[0]})">${Math.abs(diff)} ${daysWord(diff)}</div><div class="s">календарных</div></div>
+  <div class="stat"><div class="k">Окно на изготовление</div><div class="v" style="color:var(--${avail<r.make?'crit':'good'})">${Math.max(avail,0)} раб. дн.</div><div class="s">заложено ${r.make}</div></div>
+ </div><div class="verdict ${v[0]}">${v[1]}</div>${flags.length?`<ul class="flags">${flags.map(f=>`<li>${f}</li>`).join('')}</ul>`:''}`;
+ const ends=R.rows.map(s=>s.end);
+ const lo=new Date(Math.min(r.sign,today)),hi=addDays(new Date(Math.max(R.finish,deadline,...ends)),10);
+ const pct=x=>((x-lo)/(hi-lo))*100;
+ const lines=`<span class="g-line dl" style="left:${pct(deadline)}%"></span>`+(today>=lo&&today<=hi?`<span class="g-line td" style="left:${pct(today)}%"></span>`:'');
+ const months=[];let m=new Date(lo.getFullYear(),lo.getMonth()+1,1);while(m<hi){months.push(m);m=new Date(m.getFullYear(),m.getMonth()+1,1);}
+ const step=months.length>16?3:months.length>8?2:1;
+ const ticks=months.filter((_,i)=>i%step===0).filter(x=>pct(x)>4&&pct(x)<96).map(x=>`<span class="g-tick" style="left:${pct(x)}%">${MON[x.getMonth()]} ${String(x.getFullYear()).slice(2)}</span>`).join('');
+ const row=s=>`<div class="g-row${s.par?' par':''}"><div class="g-label"><div class="g-name">${s.par?'<span class="small">параллельно · </span>':''}${s.name}</div><div class="small">${s.who} · <span class="tchip ${s.type}">${TL[s.type]}</span> ${s.days} раб. дн. · ${s.src}</div></div><div class="g-track">${lines}<span class="g-bar ${s.type}${s.par?' par':''}" style="left:${pct(s.start)}%;width:${Math.max(pct(s.end)-pct(s.start),0.8)}%"></span></div><div class="g-dates mono">${fmt(s.start)}<br>${fmt(s.end)}</div></div>`;
+ $('r-gantt').innerHTML=`<div class="g-row g-axis"><div class="g-label small">Этап</div><div class="g-track">${ticks}</div><div class="g-dates">начало<br>конец</div></div>`
+  +R.rows.map(row).join('')
+  +`<div class="g-row"><div class="g-label"><div class="g-name">Входной контроль на площадке АЭС</div><div class="small">Генподрядчик, Концерн · по графику генподрядчика · несоответствия: 30 / 60 / 90 дней</div></div><div class="g-track">${lines}<span class="g-ms" style="left:${pct(R.finish)}%"></span></div><div class="g-dates mono">${fmt(R.finish)}</div></div>`;
+}
+
+function fillRoad(a){const r=a.road;$('r-sign').value=toIso(r.sign);$('r-ship').value=toIso(a.ship);
+ ['tzdev','rkd','make','transit','imp','pok'].forEach(k=>$('r-'+k).value=r[k]);
+ $('r-import').checked=r.import;$('r-repeat').checked=r.repeat;$('r-long').checked=r.long;$('r-imp').disabled=!r.import;}
+function readRoad(){const r=curAtom().road;
+ if($('r-sign').value)r.sign=fromIso($('r-sign').value);
+ ['tzdev','rkd','make','transit','imp','pok'].forEach(k=>{r[k]=Math.max(0,+$('r-'+k).value||0);});
+ r.import=$('r-import').checked;r.repeat=$('r-repeat').checked;r.long=$('r-long').checked;$('r-imp').disabled=!r.import;}
+
+function loadAtom(){const a=curAtom();$('a-accept').value=toIso(a.accept);$('a-ship').value=toIso(a.ship);$('a-notify').value=a.notify;$('a-test').value=a.test;$('a-docs').value=a.docs;$('a-inctl').value=a.inctl;fillRoad(a);renderAtom();}
+function renderAtom(){
+ const a=curAtom(), c=contracts.find(x=>x.id==$('a-contract').value);
+ if($('a-accept').value)a.accept=fromIso($('a-accept').value);
+ if($('a-ship').value)a.ship=fromIso($('a-ship').value);
+ $('r-ship').value=toIso(a.ship);
+ a.notify=+$('a-notify').value||0;a.test=+$('a-test').value||0;a.docs=+$('a-docs').value||0;a.inctl=+$('a-inctl').value||0;
+ const notifyAt=addDays(a.accept,-a.notify), finish=addWD(a.accept,a.test+a.docs), ctl=addWD(finish,a.inctl), buffer=calDays(ctl,a.ship);
+ const nu26=a.accept>=NP_SWITCH, ed=nu26?'НП-071-26':'НП-071-18';
+ $('a-card').innerHTML=`<div class="card-item"><b>${a.item}</b><span class="chip ${a.cls<=2?'crit':'warn'}">Класс безопасности ${a.cls}</span><span class="chip reg">${ed}</span><span class="small">${c.customer} · ${c.num}</span></div>`;
+ const rows=[[notifyAt,'Уведомить уполномоченную организацию'],[a.accept,'Начало приёмки и испытаний'],[finish,'Документ о приёмке оформлен'],[ctl,'Входной контроль документов завершён — можно отгружать'],[a.ship,'Отгрузка по договору']].sort((x,y)=>x[0]-y[0]);
+ $('a-plan').innerHTML=rows.map(([dt,t])=>{const n=calDays(today,dt);const lvl=n<0?'crit':n<=5?'crit':n<=14?'warn':'good';
+  return `<div class="item"><span class="date">${fmt(dt)}</span><div style="min-width:0">${t}</div><span class="chip ${lvl}">${n<0?'Прошло':'Через '+n+' '+daysWord(n)}</span></div>`}).join('');
+ const v=buffer<0?['crit',`Не успеваете: входной контроль документов закончится на ${-buffer} ${daysWord(buffer)} позже срока отгрузки. Агент подготовит письмо заказчику о переносе отгрузки.`]
+  :buffer<=3?['warn',`Запас всего ${buffer} ${daysWord(buffer)}. Любая задержка инспекции или замечания к документам сорвут отгрузку.`]
+  :['good',`Запас ${buffer} ${daysWord(buffer)} между входным контролем документов и отгрузкой.`];
+ $('a-verdict').innerHTML=`<div class="verdict ${v[0]}">${v[1]}</div>`;
+ const done=a.checks.filter(x=>x[1]).length;
+ $('a-bar').style.width=Math.round(done/a.checks.length*100)+'%';
+ $('a-progress').textContent=`Готово ${done} из ${a.checks.length}`;
+ $('a-checks').innerHTML=a.checks.map((x,i)=>`<li><label class="${x[1]?'done':''}"><input type="checkbox" id="a-chk-${i}" data-i="${i}" ${x[1]?'checked':''}><span>${x[0]}</span></label></li>`).join('');
+ $('a-edition').innerHTML=nu26
+  ?'<b>Приёмка после 18.12.2026 — действуют НП-071-26</b> (приказ Ростехнадзора № 254 от 21.07.2026). Документы об оценке соответствия, выданные раньше, действуют до окончания срока. Агент сверит формулировки документов с новой редакцией.'
+  :'<b>До 18.12.2026 действуют НП-071-18.</b> Если приёмка сдвинется на 18.12.2026 или позже, агент переключит чек-лист на НП-071-26.';
+ renderRoad(a);
+}
+$('a-checks').addEventListener('change',e=>{const i=e.target.dataset.i;if(i===undefined)return;curAtom().checks[i][1]=e.target.checked;renderAtom();});
+['a-accept','a-ship','a-notify','a-test','a-docs','a-inctl'].forEach(id=>$(id).addEventListener('input',renderAtom));
+['r-sign','r-tzdev','r-rkd','r-make','r-transit','r-imp','r-pok'].forEach(id=>$(id).addEventListener('input',()=>{readRoad();renderAtom();}));
+['r-import','r-repeat','r-long'].forEach(id=>$(id).addEventListener('change',()=>{readRoad();renderAtom();}));
+$('r-ship').addEventListener('input',()=>{if(!$('r-ship').value)return;$('a-ship').value=$('r-ship').value;renderAtom();});
+$('a-contract').addEventListener('change',loadAtom);
+
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x===b));
+ document.querySelectorAll('section[id^="tab-"]').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab);}));
+
+renderSummary();renderContracts();renderTimeline();loadPenalty();claim();loadAtom();
+
+// Вкладка «Согласования»: демо нормоискача по замечанию
+const NORM_DB=[
+ {doc:'Приказ Росатома № 1/1134-П', part:'п. 3.1', q:'Общий срок согласования и утверждения ТЗ не должен превышать 76 рабочих дней, согласование ТУ — 73 рабочих дня. ТУ утверждаются после проведения приёмочных испытаний.'},
+ {doc:'РД ЭО 1.1.2.01.0713-2019', part:'разд. 3', q:'План качества разрабатывает изготовитель по конструкторской документации и согласовывает специализированная организация или Концерн в течение 10 рабочих дней (5 — для ранее проверявшейся продукции). Отгрузка без контрольных точек плана качества не допускается.'},
+ {doc:'Приказ Росатома № 1/411-П', part:'разд. 2', q:'Приёмка оборудования 1–4 классов проводится в три этапа: приёмочная инспекция у изготовителя (до 3 рабочих дней), входной контроль документации (до 15 рабочих дней), входной контроль оборудования на площадке.'},
+ {doc:'НП-071-18', part:'п. 24', q:'Документы об оценке соответствия продукции оформляются по формам, установленным настоящими Правилами; приёмка продукции с классом безопасности проводится с участием уполномоченной организации.'}
+];
+function review(){
+ const t=$('v-remark').value.toLowerCase();
+ const keys=t.includes('график')?['графир','контрольн','точек']:[];
+ const scored=NORM_DB.map(n=>{
+  const text=n.doc+' '+n.q; const low=text.toLowerCase();
+  const score=Math.max(0,['контрольных точек','план качества','согласован','срок','приёмк','тз','ту'].reduce((s,w)=>s+(low.includes(w)?low.split(w).length-1:0),0));
+  return {n,score};
+ }).sort((a,b)=>b.score-a.score);
+ $('v-norms').innerHTML=scored.map(({n})=>`<div class="row good" style="padding:10px 12px"><h3 style="font-size:14px">${n.doc}, ${n.part}</h3><div class="meta">«${n.q}»</div></div>`).join('');
+ const body=`Поставщик рассмотрел замечание и сообщает следующее.\n\nЗамечание учтено: график изготовления будет дополнен контрольными точками оценок соответствия по классу безопасности изделия в соответствии с планом качества, согласованным в установленном порядке.\n\nПроверка сроков по нормативной базе:\n1. Согласование плана качества выполняется в течение 10 рабочих дней (РД ЭО 1.1.2.01.0713-2019) — на текущей стадии план направлен на согласование [дата].\n2. Контрольные точки включены в план качества; отгрузка без их закрытия не производится (РД ЭО 1.1.2.01.0713-2019).\n3. Приёмочная инспекция и входной контроль документации укладываются в нормативные сроки (Указания № 1/411-П).\n\nУточнённый график с контрольными точками будет передан на рассмотрение в течение [N] рабочих дней.\n\nПриложения: Уточнённый график (проект); Ссылки на пункты РД ЭО 1.1.2.01.0713-2019.`;
+ $('v-out').value=`В согласующие: [участники согласования]\n\nВозражение на замечание по графику изготовления\nпо договору [№ договора]\n\n${body}\n\nГенеральный директор ____________ / ____________ /`;
+}
+['v-remark'].forEach(id=>$(id).addEventListener('input',review));
+$('v-copy').addEventListener('click',()=>{const t=$('v-out');
+ const ok=()=>{$('v-status').textContent='Скопировано'};
+ const fall=()=>{t.focus();t.select();$('v-status').textContent='Текст выделен — нажмите Ctrl+C'};
+ try{navigator.clipboard.writeText(t.value).then(ok,fall)}catch(e){fall()}});
+review();
+})();
+</script>
+
+</body>
+</html>
